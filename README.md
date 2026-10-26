@@ -277,6 +277,7 @@ Growing your audience, one authentic interaction at a time.
 | 🎙️ [Global Podcast Strategist](marketing/marketing-global-podcast-strategist.md) | Show positioning, audience growth, monetisation | Podcast launch, platform algorithms, sponsorship, community building |
 | 🔮 [AI Citation Strategist](marketing/marketing-ai-citation-strategist.md) | AEO/GEO, AI recommendation visibility, citation auditing | Improving brand visibility across ChatGPT, Claude, Gemini, Perplexity |
 | 🇨🇳 [China Market Localization Strategist](marketing/marketing-china-market-localization-strategist.md) | Full-stack China market localization, Douyin/Xiaohongshu/WeChat GTM | Turning trend signals into executable China go-to-market strategies |
+| 🇱🇦 [Lao Brand & Commercial Strategist](marketing/marketing-lao-brand-commercial-strategist.md) | Premium brand GTM for Lao consumers, cultural fluency, social & cross-border commerce | Selling foremost brands to Lao people across Vientiane, provinces, and diaspora |
 | 🎬 [Video Optimization Specialist](marketing/marketing-video-optimization-specialist.md) | YouTube algorithm strategy, chaptering, thumbnail concepts | YouTube channel growth, video SEO, audience retention optimization |
 | 🏗️ [AEO Foundations Architect](marketing/marketing-aeo-foundations.md) | AI Engine Optimization infrastructure | llms.txt, AI-aware robots.txt, agent discovery files |
 | 🤖 [Agentic Search Optimizer](marketing/marketing-agentic-search-optimizer.md) | WebMCP & agentic task completion | Making sites usable by AI browsing agents |
