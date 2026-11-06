@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Numerology Personal Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom touches beyond Tailwind */
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .fade-in { animation: fadeIn 0.6s ease-out both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .num-badge { text-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #a78bfa; border-radius: 8px; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-fuchsia-900 text-slate-100 antialiased">
+
+  <!-- ============ HEADER ============ -->
+  <header class="text-center pt-10 pb-4 px-4">
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-amber-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+      ✨ Numerology Personal Assistant
+    </h1>
+    <p class="mt-3 text-purple-200 max-w-xl mx-auto">
+      Your free, private, in-browser guide to the numbers behind your name and birthdate.
+      Nothing is sent anywhere — all calculations happen right here on this page.
+    </p>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 pb-16">
+
+    <!-- ============ INPUT FORM ============ -->
+    <section id="formSection" class="bg-white/10 backdrop-blur rounded-2xl shadow-xl border border-white/20 p-6 sm:p-8 fade-in">
+      <h2 class="text-xl font-bold mb-1 text-amber-200">🔮 Welcome! Let's read your numbers.</h2>
+      <p class="text-sm text-purple-200 mb-6">Enter your full birth name (as written on your birth certificate) and your date of birth.</p>
+
+      <div id="alertBox" class="hidden mb-4 p-3 rounded-lg bg-red-500/30 border border-red-400 text-red-100 text-sm"></div>
+
+      <form id="numForm" novalidate>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="fullName" class="block text-sm font-semibold mb-1 text-purple-100">Full Name</label>
+            <input type="text" id="fullName" name="fullName" autocomplete="name" placeholder="e.g. Marie Louise Curie"
+              class="w-full rounded-lg bg-white/20 border border-white/30 px-4 py-2.5 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:bg-white/30 transition" />
+          </div>
+          <div>
+            <label for="dob" class="block text-sm font-semibold mb-1 text-purple-100">Date of Birth</label>
+            <input type="date" id="dob" name="dob"
+              class="w-full rounded-lg bg-white/20 border border-white/30 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:bg-white/30 transition [color-scheme:dark]" />
+          </div>
+        </div>
+        <button type="submit"
+          class="mt-6 w-full sm:w-auto bg-gradient-to-r from-amber-400 to-fuchsia-500 hover:from-amber-300 hover:to-fuchsia-400 text-purple-950 font-bold px-8 py-3 rounded-xl shadow-lg transition transform hover:scale-[1.02] active:scale-95">
+          Reveal My Numbers ✨
+        </button>
+      </form>
+    </section>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section id="dashboard" class="hidden mt-8 space-y-6">
+
+      <!-- Daily Assistant briefing -->
+      <div id="dailyCard" class="bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 backdrop-blur rounded-2xl shadow-xl border border-cyan-300/30 p-6 fade-in">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h2 class="text-lg font-bold text-cyan-200">🗓️ Daily Assistant Briefing</h2>
+          <span id="todayDateLabel" class="text-xs text-cyan-100/70 font-medium"></span>
+        </div>
+        <p class="mt-1 text-sm text-cyan-100/80">Your Personal Day number shapes the energy of today.</p>
+        <div class="mt-4 flex items-start gap-4">
+          <div id="personalDayNumber" class="num-badge shrink-0 w-16 h-16 rounded-full bg-cyan-400 text-cyan-950 flex items-center justify-center text-3xl font-extrabold shadow-lg"></div>
+          <div>
+            <h3 id="personalDayTitle" class="font-bold text-white"></h3>
+            <p id="personalDayAdvice" class="text-sm text-cyan-50/90 mt-1 leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Core numbers grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="coreNumbersGrid"><!-- cards injected by JS --></div>
+
+      <!-- Reset -->
+      <div class="text-center pt-2">
+        <button id="resetBtn" class="text-sm text-purple-300 underline underline-offset-4 hover:text-amber-200 transition">✏️ Edit my details</button>
+      </div>
+    </section>
+
+    <footer class="mt-12 text-center text-xs text-purple-300/60">
+      For entertainment &amp; self-reflection. Pure client-side Pythagorean numerology — no servers, no AI, no tracking.
+    </footer>
+  </main>
+
+  <script>
+  "use strict";
+
+  /* =====================================================================
+   * EMBEDDED INTERPRETATION DICTIONARY (the "assistant brain")
+   * Numbers 1–9 plus Master Numbers 11, 22, 33.
+   * ===================================================================== */
+  const NUMEROLOGY_DATA = {
+    "1": {
+      title: "The Pioneer",
+      keywords: ["Leadership", "Independence", "Initiative", "Originality"],
+      lifePath: "You are here to lead. Your path rewards bold independence, original thinking, and the courage to start what others only talk about. Watch for stubbornness and a need to control — true leadership lifts others up.",
+      expression: "Others see you as a self-starter with strong drive and fresh ideas. You excel at launching projects, pioneering new approaches, and working autonomously. Delegate, collaborate, and finish what you begin.",
+      soulUrge: "Deep down, you crave freedom and the chance to be first. You are motivated by being your own boss and proving that your unique vision works. Nurture confidence without needing to win every argument.",
+      personalYear: "A brand-new 1-year cycle begins! Plant seeds, start the business, take the course, move cities. Say yes to initiative and set ambitious solo goals — what you begin now colors the next nine years.",
+      dailyFocus: "Take the lead today. Start the thing you've been postponing, make the first call, and trust your instincts. Independent action beats waiting for consensus."
+    },
+    "2": {
+      title: "The Peacemaker",
+      keywords: ["Cooperation", "Diplomacy", "Sensitivity", "Partnership"],
+      lifePath: "Your path is walked together. You master patience, tact, and support — the quiet power that holds teams and relationships together. Honor your sensitivity instead of hiding it, and speak up before resentment builds.",
+      expression: "You shine as a mediator, teammate, and detail-person. People trust you to keep things harmonious and running smoothly. Pair your diplomacy with clear boundaries so you don't lose yourself pleasing others.",
+      soulUrge: "At heart you long for harmony, partnership, and belonging. Quiet environments, meaningful one-on-one time, and being needed restore you. Choose your circle carefully — your empathy is a gift, not an obligation.",
+      personalYear: "A 2-year asks for patience, partnerships, and behind-the-scenes work. Don't force big solo launches now; build alliances, negotiate, and let things ripen. Relationships formed this year become next year's foundation.",
+      dailyFocus: "Cooperate today. Listen more than you speak, smooth over tension, and give a relationship or team the attention it needs. Small kindnesses compound."
+    },
+    "3": {
+      title: "The Communicator",
+      keywords: ["Creativity", "Expression", "Joy", "Inspiration"],
+      lifePath: "You are here to create and communicate. Writing, speaking, art, humor — your path lights up when you share your gifts generously. Guard against scattering energy and harsh words; inspiration thrives on follow-through.",
+      expression: "Your natural charm, wit, and creative flair open doors. You persuade, entertain, and uplift. Finish projects with discipline and let your optimism be more than surface-level.",
+      soulUrge: "You secretly crave the spotlight of expression — to be heard, admired, and creatively alive. Social connection and beauty feed your soul. Schedule creative play even during busy seasons, or you'll wither.",
+      personalYear: "A 3-year brings social growth, creative visibility, and joy. Say yes to parties, pitches, performances, and public sharing. Your message finds a bigger audience this year — put it out there.",
+      dailyFocus: "Express yourself today. Write it, say it, sing it, sketch it. Connect with friends, share an idea publicly, and choose fun over grind where you can."
+    },
+    "4": {
+      title: "The Builder",
+      keywords: ["Stability", "Discipline", "Practicality", "Foundation"],
+      lifePath: "You build things that last. Through hard work, systems, and reliability, you create security for yourself and others. Beware rigidity and burnout — even granite foundations were laid one careful stone at a time.",
+      expression: "People know you as dependable, organized, and thorough. You turn chaos into process and promises into results. Loosen the grip occasionally; not everything needs a spreadsheet.",
+      soulUrge: "Beneath it all, you want solid ground: financial security, routine, order, and things that make practical sense. A tidy space and a completed checklist genuinely soothe your soul.",
+      personalYear: "A 4-year is work mode: lay foundations, fix systems, save money, study the details. Not glamorous, but effort now pays dividends for years. Build habits, not just tasks.",
+      dailyFocus: "Do the necessary work today. Tackle the boring-but-important task, organize one area of life, and stick to the plan. Discipline equals freedom."
+    },
+    "5": {
+      title: "The Free Spirit",
+      keywords: ["Adventure", "Change", "Freedom", "Versatility"],
+      lifePath: "Your path is motion. Freedom, travel, variety, and learning through experience define you. The lesson: embrace change without fleeing commitment, and channel restless energy into curiosity rather than excess.",
+      expression: "You adapt fast, sell ideas well, and thrive in dynamic settings. Your versatility is a superpower — just finish at least one thing fully before chasing the next shiny opportunity.",
+      soulUrge: "You ache for novelty, sensory experience, and wide-open options. Routines feel like cages; exploration feels like oxygen. Build freedom into your life design or you'll rebel against it.",
+      personalYear: "A 5-year shakes things up: unexpected changes, travel, meeting new people, breaking routines. Go with the flow, stay teachable, and avoid impulsive destruction disguised as freedom.",
+      dailyFocus: "Seek variety today. Change your route, learn something new, talk to strangers, and stay flexible when plans shift. Say yes to one spontaneous opportunity."
+    },
+    "6": {
+      title: "The Nurturer",
+      keywords: ["Home", "Responsibility", "Care", "Harmony"],
+      lifePath: "Love, home, and service are your classroom. You attract people who need care and guidance — the lesson is to help without controlling, and to nurture yourself as devotedly as you nurture others.",
+      expression: "You radiate warmth, protection, and aesthetic taste. Communities and families orbit you. Watch perfectionism and meddling; offer help when asked, and accept it graciously too.",
+      soulUrge: "Deep down you want a beautiful, harmonious home and people to care for. Beauty, comfort, and being needed fill your tank. Remember: you are worthy of care even when you're not useful.",
+      personalYear: "A 6-year centers on family, home, love, and responsibility. Renovations, commitments, caregiving, and community matters come forward. Make your nest cozy and honor your people.",
+      dailyFocus: "Care for someone (or your home) today. Call a family member, do a favor, beautify your space. Responsibility done with love is your power."
+    },
+    "7": {
+      title: "The Seeker",
+      keywords: ["Wisdom", "Analysis", "Spirituality", "Introspection"],
+      lifePath: "Your path runs deep. You seek truth through study, solitude, and inner work. Intellectual honesty and spiritual curiosity set you apart — just don't hide behind isolation or cynical doubt.",
+      expression: "You're perceived as thoughtful, precise, and somewhat mysterious. Research, analysis, and specialized knowledge are your arena. Share your insights; a hidden wisdom helps no one.",
+      soulUrge: "You quietly need solitude, meaning, and answers to big questions. Alone time isn't loneliness — it's how you recharge and understand. Protect it unapologetically.",
+      personalYear: "A 7-year turns inward: study, reflect, heal, research, sharpen skills. Progress looks invisible from outside but compounds fast. Trust intuition and schedule plenty of quiet.",
+      dailyFocus: "Go deep today. Read, meditate, journal, or analyze one question thoroughly. Spend time alone to recharge and trust what your gut tells you."
+    },
+    "8": {
+      title: "The Powerhouse",
+      keywords: ["Ambition", "Abundance", "Authority", "Manifestation"],
+      lifePath: "You are here to master the material world: money, power, influence, and legacy. Learn to wield authority with integrity and balance ambition with generosity — abundance flows through an open hand.",
+      expression: "You project competence and executive strength. Business, management, and big-picture strategy suit you. Measure success by impact and integrity, not just income.",
+      soulUrge: "Hidden desire burns for achievement, recognition, and financial mastery. Status and resources aren't shallow for you — they're proof you can protect and provide. Aim them at something worthy.",
+      personalYear: "An 8-year is the harvest: career leaps, financial gains (or lessons), and karmic returns. Negotiate, invest, lead, and reap what past years sowed. Handle power responsibly.",
+      dailyFocus: "Handle business today. Focus on money, career moves, negotiations, and long-term goals. Step into authority confidently and make the decisive call."
+    },
+    "9": {
+      title: "The Humanitarian",
+      keywords: ["Compassion", "Completion", "Wisdom", "Service"],
+      lifePath: "Your path is completion and giving back. Old-comer-soul energy makes you wise, generous, and idealistic. Learn to release — endings, grudges, and what no longer serves — so you can serve from wholeness, not depletion.",
+      expression: "You inspire with broad compassion, artistic depth, and worldly understanding. Causes and communities respond to you. Let go of trying to save everyone; model the change instead.",
+      soulUrge: "You dream of making the world better and leaving nothing wasted. Creative outlets and service work feed your spirit. Forgive quickly — carrying old weight slows your flight.",
+      personalYear: "A 9-year closes a chapter: declutter, forgive, finish projects, say goodbyes, and give back. What ends now makes room for the fresh 1-year ahead. Toss what no longer fits.",
+      dailyFocus: "Let go and give today. Finish lingering loose ends, donate, forgive a small grudge, or help a cause. Endings clear space for beginnings."
+    },
+    "11": {
+      title: "The Illuminator (Master Number)",
+      keywords: ["Intuition", "Inspiration", "Vision", "Idealism"],
+      lifePath: "As Master Number 11, your path carries heightened intuition and inspirational leadership. You sense what others miss and can illuminate entire rooms — but nervous energy and high ideals must be grounded in daily practice.",
+      expression: "You express as a visionary and motivator with almost electric charisma. Ideas arrive whole and inspired. Build the discipline of 2 (your base) to deliver visions into tangible form.",
+      soulUrge: "Your soul hungers for meaning, revelation, and guiding others. Spiritual insight and 'downloads' of inspiration sustain you — journal them before they fade.",
+      personalYear: "An 11-year amplifies intuition and insight: synchronicities, revelations, and inspired calls stand out. Pay attention to dreams and hunches; a higher-purpose opportunity may appear.",
+      dailyFocus: "Trust your gut today. Meditate, listen for subtle guidance, and share an inspiring idea. Your sensitivity is signal, not noise."
+    },
+    "22": {
+      title: "The Master Builder (Master Number)",
+      keywords: ["Visionary Leadership", "Large-Scale Impact", "Discipline", "Legacy"],
+      lifePath: "Master Number 22 combines grand vision with practical genius. You're built to turn dreams into institutions — huge projects, systems, or works that outlast you. Start big, but never skip the small bricks.",
+      expression: "You express as a master architect of reality: ambitious, organized, and capable of rallying people around monumental goals. Protect your energy; scale ambitions in stages.",
+      soulUrge: "Deeply, you want to build something lasting that improves many lives. Tangible legacy motivates you more than applause. Keep the practical foundation under the dream.",
+      personalYear: "A 22-year supercharges manifestation: the resources, discipline, and vision align for major real-world construction — business, property, organizations. Think decades, not days.",
+      dailyFocus: "Work on the big picture today. Take one concrete step toward a large, lasting goal, and pair vision with a practical plan."
+    },
+    "33": {
+      title: "The Master Teacher (Master Number)",
+      keywords: ["Selfless Service", "Healing", "Guidance", "Compassionate Love"],
+      lifePath: "Master Number 33 is the highest vibration of service — the Master Teacher. Your path blends creativity (3), nurturing (6), and selflessness (9) to uplift humanity directly. Care for yourself so your giving doesn't drain you.",
+      expression: "You express through teaching, healing, counseling, or art that elevates hearts. People find transformation around you. Set boundaries so compassion doesn't become martyrdom.",
+      soulUrge: "Your soul desires to love without limits and guide others toward their best selves. Meaningful mentorship is your fuel. Accept help as gracefully as you give it.",
+      personalYear: "A 33-year highlights teaching, healing, and service on a larger stage. Mentoring opportunities, creative contributions, and acts of compassion bring rare fulfillment. Lead with heart.",
+      dailyFocus: "Teach or heal today. Offer guidance, volunteer, or create something that lifts others. Compassionate action is your superpower."
+    }
+  };
+
+  /* =====================================================================
+   * CORE PYTHAGOREAN ENGINE
+   * Letter values: A=1, B=2, ... I=9, J=1, K=2, ... R=9, S=1 ... Z=8
+   * Vowels (A,E,I,O,U) → Soul Urge; all letters → Expression.
+   * ===================================================================== */
+  const LETTER_VALUES = {};
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach((ch, i) => {
+    LETTER_VALUES[ch] = (i % 9) + 1;
+  });
+  const VOWELS = new Set(["A", "E", "I", "O", "U"]);
+
+  // Reduce a number to a single digit, preserving Master Numbers 11, 22, 33.
+  function reduceKeepMasters(n) {
+    while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+      n = String(n).split("").reduce((s, d) => s + Number(d), 0);
+    }
+    return n;
+  }
+
+  // Plain single-digit reduction (used inside multi-step sums).
+  function reduceToDigit(n) {
+    while (n > 9) {
+      n = String(n).split("").reduce((s, d) => s + Number(d), 0);
+    }
+    return n;
+  }
+
+  function sumLetters(name, onlyVowels) {
+    let total = 0;
+    for (const raw of name.toUpperCase()) {
+      const ch = raw.replace(/[^A-Z]/g, "");
+      if (!ch) continue;
+      if (onlyVowels && !VOWELS.has(ch)) continue;
+      total += LETTER_VALUES[ch];
+    }
+    return total;
+  }
+
+  function expressionNumber(name) {
+    return reduceKeepMasters(sumLetters(name, false));
+  }
+
+  function soulUrgeNumber(name) {
+    return reduceKeepMasters(sumLetters(name, true));
+  }
+
+  function lifePathNumber(year, month, day) {
+    // Classic method: reduce each component, then sum and reduce.
+    const y = reduceToDigit(String(year).split("").reduce((s, d) => s + Number(d), 0));
+    const m = reduceToDigit(month);
+    const d = reduceToDigit(day);
+    return reduceKeepMasters(y + m + d);
+  }
+
+  function personalYearNumber(birthMonth, birthDay, currentYear) {
+    return reduceKeepMasters(
+      reduceToDigit(birthMonth) + reduceToDigit(birthDay) + reduceToDigit(currentYear)
+    );
+  }
+
+  function personalDayNumber(birthMonth, birthDay, today) {
+    return reduceKeepMasters(
+      personalYearNumber(birthMonth, birthDay, today.getFullYear()) +
+      reduceToDigit(today.getMonth() + 1) +
+      reduceToDigit(today.getDate())
+    );
+  }
+
+  /* =====================================================================
+   * UI LOGIC
+   * ===================================================================== */
+  const $ = (id) => document.getElementById(id);
+  const formSection = $("formSection");
+  const dashboard = $("dashboard");
+  const alertBox = $("alertBox");
+
+  function showAlert(msg) {
+    alertBox.textContent = msg;
+    alertBox.classList.remove("hidden");
+  }
+  function hideAlert() {
+    alertBox.classList.add("hidden");
+  }
+
+  function interpret(num, fieldKey) {
+    const entry = NUMEROLOGY_DATA[String(num)];
+    if (!entry) return { num, title: "Unknown", text: "", keywords: [] };
+    return { num, title: entry.title, text: entry[fieldKey], keywords: entry.keywords };
+  }
+
+  function cardHTML(icon, label, info, accent) {
+    const kwChips = info.keywords
+      .map(k => `<span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/15 border border-white/20 mr-1 mb-1">${k}</span>`)
+      .join("");
+    return `
+      <div class="bg-white/10 backdrop-blur rounded-2xl shadow-xl border border-white/20 p-6 fade-in">
+        <div class="flex items-center gap-4">
+          <div class="num-badge shrink-0 w-14 h-14 rounded-2xl ${accent} flex items-center justify-center text-2xl font-extrabold shadow">${info.num}</div>
+          <div>
+            <p class="text-xs uppercase tracking-wider text-purple-200/80 font-bold">${icon} ${label}</p>
+            <h3 class="text-lg font-bold text-white leading-tight">${info.title}</h3>
+          </div>
+        </div>
+        <div class="mt-3">${kwChips}</div>
+        <p class="mt-3 text-sm leading-relaxed text-purple-50/90">${info.text}</p>
+      </div>`;
+  }
+
+  function renderDashboard(name, dob) {
+    const year = dob.getFullYear();
+    const month = dob.getMonth() + 1;
+    const day = dob.getDate();
+    const today = new Date();
+
+    // Life Path / Expression / Soul Urge cards
+    const lp = interpret(lifePathNumber(year, month, day), "lifePath");
+    const ex = interpret(expressionNumber(name), "expression");
+    const su = interpret(soulUrgeNumber(name), "soulUrge");
+    const py = interpret(personalYearNumber(month, day, today.getFullYear()), "personalYear");
+
+    $("coreNumbersGrid").innerHTML =
+      cardHTML("🌟", "Life Path", lp, "bg-amber-300 text-amber-950") +
+      cardHTML("🎯", "Expression / Destiny", ex, "bg-fuchsia-300 text-fuchsia-950") +
+      cardHTML("❤️", "Soul Urge", su, "bg-rose-300 text-rose-950") +
+      cardHTML("🧭", "Personal Year (this year)", py, "bg-emerald-300 text-emerald-950");
+
+    // Daily Assistant
+    const pdNum = personalDayNumber(month, day, today);
+    const pdEntry = NUMEROLOGY_DATA[String(pdNum)] || NUMEROLOGY_DATA["1"];
+    $("personalDayNumber").textContent = pdNum;
+    $("personalDayTitle").textContent = `Personal Day ${pdNum} — ${pdEntry.title}`;
+    $("personalDayAdvice").textContent = pdEntry.dailyFocus;
+    $("todayDateLabel").textContent = today.toLocaleDateString(undefined, {
+      weekday: "long", year: "numeric", month: "long", day: "numeric"
+    });
+
+    formSection.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    dashboard.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  $("numForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    hideAlert();
+
+    const name = $("fullName").value.trim();
+    const dobRaw = $("dob").value;
+
+    // --- Validation ---
+    if (!name) {
+      showAlert("😊 Please enter your full name so we can calculate your Expression and Soul Urge numbers.");
+      return;
+    }
+    if (!/^[A-Za-z][A-Za-z\s'.\-ŒÆßà-ÿ]*$/.test(name)) {
+      showAlert("🤔 That name contains characters we can't convert to numbers. Please use letters, spaces, hyphens, or apostrophes only.");
+      return;
+    }
+    if (!dobRaw) {
+      showAlert("😊 Please choose your date of birth — your Life Path depends on it.");
+      return;
+    }
+    const dob = new Date(dobRaw + "T00:00:00");
+    if (isNaN(dob.getTime())) {
+      showAlert("⚠️ That date doesn't look valid. Please re-enter your date of birth.");
+      return;
+    }
+    const now = new Date();
+    if (dob > now) {
+      showAlert("⏳ Your date of birth is in the future. Please double-check it!");
+      return;
+    }
+    if (dob.getFullYear() < 1900) {
+      showAlert("🕰️ Please enter a birth year of 1900 or later.");
+      return;
+    }
+
+    renderDashboard(name, dob);
+  });
+
+  $("resetBtn").addEventListener("click", () => {
+    dashboard.classList.add("hidden");
+    formSection.classList.remove("hidden");
+    formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    $("fullName").focus();
+  });
+  </script>
+</body>
+</html>
